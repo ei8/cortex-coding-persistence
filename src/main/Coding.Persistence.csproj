@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+	<AssemblyName>ei8.Cortex.Coding.Persistence</AssemblyName>
+    <RootNamespace>ei8.Cortex.Coding.Persistence</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ei8.Cortex.Library.Client" Version="0.3.14" />
+    <PackageReference Include="ei8.Data.Aggregate.Port.Adapter.In.InProcess" Version="0.1.4" />
+    <PackageReference Include="ei8.Data.ExternalReference.Port.Adapter.In.InProcess" Version="0.1.0" />
+    <PackageReference Include="ei8.Data.Tag.Port.Adapter.In.InProcess" Version="0.1.11" />
+    <PackageReference Include="ei8.EventSourcing.Client" Version="0.2.12" />
+    <PackageReference Include="neurUL.Cortex.Common" Version="0.1.4" />
+    <PackageReference Include="neurUL.Cortex.Port.Adapter.In.InProcess" Version="0.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\cortex-coding\src\main\Coding.csproj" />
+  </ItemGroup>
+
+</Project>
