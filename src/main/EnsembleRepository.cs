@@ -12,21 +12,35 @@ namespace ei8.Cortex.Coding.Persistence
     public class EnsembleRepository : IEnsembleRepository
     {
         private readonly INeuronQueryClient neuronQueryClient;
+        private readonly string cortexLibraryOutBaseUrl;
+        private readonly int configQueryResultLimit;
         private IEnumerable<ExternalReference> externalReferences;
 
-        public EnsembleRepository(INeuronQueryClient neuronQueryClient, IOptions<List<ExternalReference>> externalReferences)
+        public EnsembleRepository(
+            INeuronQueryClient neuronQueryClient, 
+            IOptions<List<ExternalReference>> externalReferences,
+            string cortexLibraryOutBaseUrl,
+            int configQueryResultLimit
+        )
         {
             AssertionConcern.AssertArgumentNotNull(neuronQueryClient, nameof(neuronQueryClient));
             AssertionConcern.AssertArgumentNotNull(externalReferences, nameof(externalReferences));
+            AssertionConcern.AssertArgumentNotEmpty(cortexLibraryOutBaseUrl, "Parameter cannot be null or empty.", nameof(cortexLibraryOutBaseUrl));
+            AssertionConcern.AssertArgumentRange(configQueryResultLimit, 0, int.MaxValue, nameof(configQueryResultLimit));
 
             this.neuronQueryClient = neuronQueryClient;
             this.externalReferences = externalReferences.Value.ToArray();
+            this.cortexLibraryOutBaseUrl = cortexLibraryOutBaseUrl;
+            this.configQueryResultLimit = configQueryResultLimit;
         }
 
-        public async Task<Ensemble> GetByQueryAsync(string userId, NeuronQuery query, string cortexLibraryOutBaseUrl, int queryResultLimit)
+        public async Task<Ensemble> GetByQueryAsync(string userId, NeuronQuery query, int? queryResultLimitOverride = null)
         {
             AssertionConcern.AssertArgumentNotEmpty(userId, "Specified 'userId' cannot be null or empty.", nameof(userId));
             AssertionConcern.AssertArgumentNotNull(query, nameof(query));
+
+            if (queryResultLimitOverride.HasValue)
+                AssertionConcern.AssertArgumentRange(queryResultLimitOverride.Value, 0, int.MaxValue, nameof(configQueryResultLimit));
 
             var qr = await neuronQueryClient.GetNeuronsInternal(
                 cortexLibraryOutBaseUrl,
@@ -41,6 +55,9 @@ namespace ei8.Cortex.Coding.Persistence
                 $"'{string.Join("', '", qr.Items.SelectMany(i => i.Validation.RestrictionReasons))}'."
             );
 
+            var queryResultLimit = queryResultLimitOverride.HasValue ?
+                queryResultLimitOverride : this.configQueryResultLimit;
+
             AssertionConcern.AssertStateTrue(
                 qr.Count < queryResultLimit, 
                 $"Query results cannot exceed {queryResultLimit} items. Query: {query.ToString()}"
@@ -49,7 +66,7 @@ namespace ei8.Cortex.Coding.Persistence
             return qr.ToEnsemble();
         }
 
-        public async Task<IDictionary<string, Coding.Neuron>> GetExternalReferencesAsync(string userId, string cortexLibraryOutBaseUrl, params string[] keys)
+        public async Task<IDictionary<string, Coding.Neuron>> GetExternalReferencesAsync(string userId, params string[] keys)
         {
             AssertionConcern.AssertArgumentNotEmpty(userId, "Specified 'userId' cannot be null or empty.", nameof(userId));
             AssertionConcern.AssertArgumentNotNull(keys, nameof(keys));
@@ -57,7 +74,7 @@ namespace ei8.Cortex.Coding.Persistence
 
             var exRefs = externalReferences.Where(er => keys.Contains(er.Key));
             var qr = await neuronQueryClient.GetNeuronsInternal(
-                    cortexLibraryOutBaseUrl + "/",
+                    this.cortexLibraryOutBaseUrl,
                     new NeuronQuery()
                     {
                         ExternalReferenceUrl = exRefs.Select(er => er.Url),
