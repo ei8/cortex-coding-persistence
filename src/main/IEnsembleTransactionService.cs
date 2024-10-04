@@ -8,8 +8,7 @@ namespace ei8.Cortex.Coding.Persistence
     {
         Task SaveAsync(
             ITransaction transaction,
-            Ensemble ensemble,
-            Guid authorId
+            Ensemble ensemble
         );
     }
 }

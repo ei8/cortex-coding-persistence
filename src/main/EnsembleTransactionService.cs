@@ -32,8 +32,7 @@ namespace ei8.Cortex.Coding.Persistence
 
         public async Task SaveAsync(
            ITransaction transaction,
-           Ensemble ensemble,
-           Guid authorId
+           Ensemble ensemble
         )
         {
             var transientItems = ensemble.GetItems().Where(ei => ei.IsTransient);
@@ -41,7 +40,6 @@ namespace ei8.Cortex.Coding.Persistence
                 await EnsembleTransactionService.SaveItemAsync(
                     transaction,
                     ei,
-                    authorId,
                     this.neuronAdapter,
                     this.terminalAdapter,
                     this.tagItemAdapter,
@@ -53,7 +51,6 @@ namespace ei8.Cortex.Coding.Persistence
         private static async Task SaveItemAsync(
            ITransaction transaction,
            IEnsembleItem item,
-           Guid authorId,
            neurUL.Cortex.Port.Adapter.In.InProcess.INeuronAdapter neuronAdapter,
            neurUL.Cortex.Port.Adapter.In.InProcess.ITerminalAdapter terminalAdapter,
            ei8.Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter,
@@ -61,6 +58,10 @@ namespace ei8.Cortex.Coding.Persistence
            ei8.Data.ExternalReference.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter
            )
         {
+            // This unusedAuthorId is unused because the Transaction object uses two eventstores.
+            // The adapter methods use temporary eventstores whose authorIds,
+            // which are set during Transaction.BeginAsync, are never persisted
+            var unusedAuthorId = Guid.NewGuid();
             if (item is Coding.Terminal terminal)
             {
                 await transaction.InvokeAdapterAsync(
@@ -72,7 +73,7 @@ namespace ei8.Cortex.Coding.Persistence
                         terminal.PostsynapticNeuronId,
                         (neurUL.Cortex.Common.NeurotransmitterEffect)Enum.Parse(typeof(neurUL.Cortex.Common.NeurotransmitterEffect), terminal.Effect.ToString()),
                         terminal.Strength,
-                        authorId
+                        unusedAuthorId
                     )
                 );
             }
@@ -84,7 +85,7 @@ namespace ei8.Cortex.Coding.Persistence
                         typeof(NeuronCreated).Assembly.GetEventTypes(),
                         async (ev) => await neuronAdapter.CreateNeuron(
                             neuron.Id,
-                            authorId)
+                            unusedAuthorId)
                         );
 
                 // assign tag value
@@ -96,7 +97,7 @@ namespace ei8.Cortex.Coding.Persistence
                         async (ev) => await tagItemAdapter.ChangeTag(
                             neuron.Id,
                             neuron.Tag,
-                            authorId,
+                            unusedAuthorId,
                             ev
                         ),
                         expectedVersion
@@ -112,7 +113,7 @@ namespace ei8.Cortex.Coding.Persistence
                         async (ev) => await aggregateItemAdapter.ChangeAggregate(
                             neuron.Id,
                             neuron.RegionId.ToString(),
-                            authorId,
+                            unusedAuthorId,
                             ev
                         ),
                         expectedVersion
@@ -127,7 +128,7 @@ namespace ei8.Cortex.Coding.Persistence
                         async (ev) => await externalReferenceItemAdapter.ChangeUrl(
                             neuron.Id,
                             neuron.ExternalReferenceUrl,
-                            authorId,
+                            unusedAuthorId,
                             ev
                         ),
                         expectedVersion
