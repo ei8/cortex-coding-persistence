@@ -38,16 +38,16 @@ namespace ei8.Cortex.Coding.Persistence
             this.appUserId = appUserId;
         }
 
-        public async Task<Ensemble> GetByQueryAsync(NeuronQuery query) =>
+        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query) =>
             await this.GetByQueryAsync(query, true);
 
-        public async Task<Ensemble> GetByQueryAsync(NeuronQuery query, string userId) =>
+        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query, string userId) =>
             await this.GetByQueryAsync(query, userId, true);
 
-        public async Task<Ensemble> GetByQueryAsync(NeuronQuery query, bool restrictQueryResultCount) =>
+        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query, bool restrictQueryResultCount) =>
             await this.GetByQueryAsync(query, this.appUserId, restrictQueryResultCount);
 
-        public async Task<Ensemble> GetByQueryAsync(NeuronQuery query, string userId, bool restrictQueryResultCount)
+        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query, string userId, bool restrictQueryResultCount)
         {
             AssertionConcern.AssertArgumentNotNull(query, nameof(query));
 
@@ -74,18 +74,13 @@ namespace ei8.Cortex.Coding.Persistence
                 $"Query results cannot exceed {queryResultLimit} items. Query: {query.ToString()}"
             );
 
-            return qr.ToEnsemble();
+            return new QueryResult(qr.ToEnsemble(), qr.UserNeuronId);
         }
 
-        public async Task<IDictionary<string, Coding.Neuron>> GetExternalReferencesAsync(IEnumerable<string> keys) =>
-            await this.GetExternalReferencesAsync(keys, this.appUserId);
-
-        public async Task<IDictionary<string, Coding.Neuron>> GetExternalReferencesAsync(IEnumerable<string> keys, string userId)
+        public async Task<IDictionary<string, Coding.Neuron>> GetExternalReferencesAsync(IEnumerable<string> keys) 
         {
             AssertionConcern.AssertArgumentNotNull(keys, nameof(keys));
             AssertionConcern.AssertArgumentValid(k => k.Count() > 0, keys, "Specified 'keys' cannot be an empty array.", nameof(keys));
-
-            userId = userId ?? this.appUserId;
 
             var exRefs = externalReferences.Where(er => keys.Contains(er.Key));
             var qr = await neuronQueryClient.GetNeuronsInternal(
@@ -97,7 +92,7 @@ namespace ei8.Cortex.Coding.Persistence
                         SortOrder = SortOrderValue.Descending,
                         PageSize = exRefs.Count()
                     },
-                    userId
+                    this.appUserId
                 );
             AssertionConcern.AssertStateTrue(keys.Count() == qr.Count, "At least one local copy of a specified External Reference was not found.");
             var result = new Dictionary<string, Coding.Neuron>();
