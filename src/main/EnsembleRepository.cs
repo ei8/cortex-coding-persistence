@@ -80,7 +80,18 @@ namespace ei8.Cortex.Coding.Persistence
         public async Task<IDictionary<string, Coding.Neuron>> GetExternalReferencesAsync(IEnumerable<string> keys) 
         {
             AssertionConcern.AssertArgumentNotNull(keys, nameof(keys));
-            AssertionConcern.AssertArgumentValid(k => k.Count() > 0, keys, "Specified 'keys' cannot be an empty array.", nameof(keys));
+            AssertionConcern.AssertArgumentValid(
+                k => k.Count() > 0, 
+                keys, 
+                "Specified 'keys' cannot be an empty array.", 
+                nameof(keys)
+            );
+            AssertionConcern.AssertArgumentValid(
+                k => !k.Any(s => string.IsNullOrWhiteSpace(s)), 
+                keys, 
+                "Specified 'keys' cannot contain an empty string.", 
+                nameof(keys)
+            );
 
             var exRefs = externalReferences.Where(er => keys.Contains(er.Key));
             var qr = await neuronQueryClient.GetNeuronsInternal(
