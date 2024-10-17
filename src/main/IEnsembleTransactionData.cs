@@ -5,7 +5,7 @@ namespace ei8.Cortex.Coding.Persistence
 {
     public interface IEnsembleTransactionData
     {
-        void AddSavedTransientNeuron(Neuron value);
+        void AddSavedTransient(IEnsembleItem value);
 
         IEnumerable<Neuron> SavedTransientNeurons { get; }
 
@@ -16,5 +16,7 @@ namespace ei8.Cortex.Coding.Persistence
         Guid GetReplacementIdIfExists(Guid originalId);
 
         bool IsReplaced(Guid value);
+
+        bool TryGetSavedTransient(string tag, IEnumerable<Guid> currentPostsynapticIds, out Ensemble result);
     }
 }

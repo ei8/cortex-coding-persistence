@@ -50,8 +50,8 @@ namespace ei8.Cortex.Coding.Persistence
                     this.aggregateItemAdapter,
                     this.externalReferenceItemAdapter
                 );
-                if (ei is Neuron ne)
-                    this.transactionData.AddSavedTransientNeuron(Neuron.CloneAsPersistent(ne));
+                
+                this.transactionData.AddSavedTransient(ei);
             }
         }
 
