@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
@@ -76,10 +77,10 @@ namespace ei8.Cortex.Coding.Persistence
                 nextNeuronIds.Clear();
                 foreach (var currentNeuronId in currentNeuronIds.ToArray())
                 {
-                    Debug.WriteLine($"Optimizing '{currentNeuronId}'...");
+                    EnsembleRepositoryExtensions.Log($"Optimizing '{currentNeuronId}'...");
                     if (transactionData.IsReplaced(currentNeuronId))
                     {
-                        Debug.WriteLine($"> Neuron replaced - skipped.");
+                        EnsembleRepositoryExtensions.Log($"> Neuron replaced - skipped.");
                         continue;
                     }
 
@@ -88,18 +89,18 @@ namespace ei8.Cortex.Coding.Persistence
                         $"'currentNeuron' '{currentNeuronId}' must exist in ensemble."
                     );
 
-                    Debug.WriteLine($"Tag: '{currentNeuron.Tag}'");
+                    EnsembleRepositoryExtensions.Log($"Tag: '{currentNeuron.Tag}'");
 
                     var postsynaptics = ensemble.GetPostsynapticNeurons(currentNeuronId);
                     if (EnsembleRepositoryExtensions.ContainsTransientUnprocessed(postsynaptics, processedNeuronIds))
                     {
-                        Debug.WriteLine($"> Transient unprocessed postsynaptic found - processing deferred.");
+                        EnsembleRepositoryExtensions.Log($"> Transient unprocessed postsynaptic found - processing deferred.");
                         nextNeuronIds.Add(currentNeuronId);
                         continue;
                     }
                     else if (processedNeuronIds.Contains(currentNeuronId))
                     {
-                        Debug.WriteLine($"> Already processed - skipped.");
+                        EnsembleRepositoryExtensions.Log($"> Already processed - skipped.");
                         continue;
                     }
 
@@ -107,7 +108,7 @@ namespace ei8.Cortex.Coding.Persistence
 
                     if (currentNeuron.IsTransient)
                     {
-                        Debug.WriteLine($"> Neuron marked as transient. Retrieving persistent identical granny with postsynaptics " +
+                        EnsembleRepositoryExtensions.Log($"> Neuron marked as transient. Retrieving persistent identical granny with postsynaptics " +
                             $"'{string.Join(", ", postsynaptics.Select(n => n.Id))}'.");
                         var identical = await EnsembleRepositoryExtensions.GetPersistentIdentical(
                             ensembleRepository,
@@ -119,7 +120,7 @@ namespace ei8.Cortex.Coding.Persistence
 
                         if (identical != null)
                         {
-                            Debug.WriteLine($"> Persistent identical granny found - updating presynaptics and containing ensemble.");
+                            EnsembleRepositoryExtensions.Log($"> Persistent identical granny found - updating presynaptics and containing ensemble.");
                             EnsembleRepositoryExtensions.UpdateDendrites(
                                 ensemble,
                                 currentNeuronId,
@@ -132,18 +133,18 @@ namespace ei8.Cortex.Coding.Persistence
                             ensemble.AddReplace(identical);
                             ensemble.Remove(currentNeuronId);
                             transactionData.AddReplacedNeuron(currentNeuronId, identical);
-                            Debug.WriteLine($"> Neuron replaced and removed.");
+                            EnsembleRepositoryExtensions.Log($"> Neuron replaced and removed.");
                             nextPostsynapticId = identical.Id;
                         }
                         else
                         {
-                            Debug.WriteLine($"> Persistent identical granny was NOT found.");
+                            EnsembleRepositoryExtensions.Log($"> Persistent identical granny was NOT found.");
                             nextPostsynapticId = currentNeuronId;
                         }
                     }
                     else
                     {
-                        Debug.WriteLine($"> Neuron NOT marked as transient.");
+                        EnsembleRepositoryExtensions.Log($"> Neuron NOT marked as transient.");
                         nextPostsynapticId = currentNeuronId;
                     }
 
@@ -151,13 +152,19 @@ namespace ei8.Cortex.Coding.Persistence
                     var presynaptics = ensemble.GetPresynapticNeurons(nextPostsynapticId);
                     presynaptics.ToList().ForEach(n =>
                     {
-                        Debug.WriteLine($"> Adding presynaptic '{n.Id}' to nextNeuronIds.");
+                        EnsembleRepositoryExtensions.Log($"> Adding presynaptic '{n.Id}' to nextNeuronIds.");
                         nextNeuronIds.Add(n.Id);
                     });
                 }
-                Debug.WriteLine($"Setting next batch of {nextNeuronIds.Count()} ids.");
+                EnsembleRepositoryExtensions.Log($"Setting next batch of {nextNeuronIds.Count()} ids.");
                 currentNeuronIds = nextNeuronIds.ToArray();
             }
+        }
+
+        [Conditional("UNIQLOG")]
+        private static void Log(string value)
+        {
+            Debug.WriteLine(value);
         }
 
         private static async Task UniquifyTerminalsAsync(

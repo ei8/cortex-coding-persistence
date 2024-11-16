@@ -6,6 +6,10 @@
     <RootNamespace>ei8.Cortex.Coding.Persistence</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants);<!--UNIQLOG--></DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="ei8.Cortex.Library.Client" Version="0.3.15" />
     <PackageReference Include="ei8.Data.Aggregate.Port.Adapter.In.InProcess" Version="0.1.4" />
