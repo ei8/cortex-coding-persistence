@@ -1,9 +1,6 @@
 ﻿using ei8.Cortex.Library.Client.Out;
 using ei8.Cortex.Library.Common;
-using Microsoft.Extensions.Options;
 using neurUL.Common.Domain.Model;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -12,27 +9,23 @@ namespace ei8.Cortex.Coding.Persistence
     public class EnsembleRepository : IEnsembleRepository
     {
         private readonly INeuronQueryClient neuronQueryClient;
-        private readonly IEnumerable<ExternalReference> externalReferences; 
         private readonly string cortexLibraryOutBaseUrl;
         private readonly int configQueryResultLimit;
         private readonly string appUserId;
-        
+
         public EnsembleRepository(
-            INeuronQueryClient neuronQueryClient, 
-            IOptions<List<ExternalReference>> externalReferences,
+            INeuronQueryClient neuronQueryClient,
             string cortexLibraryOutBaseUrl,
             int configQueryResultLimit,
             string appUserId
         )
         {
             AssertionConcern.AssertArgumentNotNull(neuronQueryClient, nameof(neuronQueryClient));
-            AssertionConcern.AssertArgumentNotNull(externalReferences, nameof(externalReferences));
             AssertionConcern.AssertArgumentNotEmpty(cortexLibraryOutBaseUrl, "Parameter cannot be null or empty.", nameof(cortexLibraryOutBaseUrl));
             AssertionConcern.AssertArgumentRange(configQueryResultLimit, 0, int.MaxValue, nameof(configQueryResultLimit));
             AssertionConcern.AssertArgumentNotEmpty(appUserId, "Parameter cannot be null or empty.", nameof(appUserId));
 
             this.neuronQueryClient = neuronQueryClient;
-            this.externalReferences = externalReferences.Value.ToArray();
             this.cortexLibraryOutBaseUrl = cortexLibraryOutBaseUrl;
             this.configQueryResultLimit = configQueryResultLimit;
             this.appUserId = appUserId;
@@ -75,51 +68,6 @@ namespace ei8.Cortex.Coding.Persistence
             );
 
             return new QueryResult(qr.ToEnsemble(), qr.UserNeuronId);
-        }
-
-        public async Task<IDictionary<string, Coding.Neuron>> GetExternalReferencesAsync(IEnumerable<string> keys) 
-        {
-            AssertionConcern.AssertArgumentNotNull(keys, nameof(keys));
-            AssertionConcern.AssertArgumentValid(
-                k => k.Count() > 0, 
-                keys, 
-                "Specified 'keys' cannot be an empty array.", 
-                nameof(keys)
-            );
-            AssertionConcern.AssertArgumentValid(
-                k => !k.Any(s => string.IsNullOrWhiteSpace(s)), 
-                keys, 
-                "Specified 'keys' cannot contain an empty string.", 
-                nameof(keys)
-            );
-
-            var exRefs = externalReferences.Where(er => keys.Contains(er.Key));
-            var qr = await neuronQueryClient.GetNeuronsInternal(
-                    this.cortexLibraryOutBaseUrl,
-                    new NeuronQuery()
-                    {
-                        ExternalReferenceUrl = exRefs.Select(er => er.Url),
-                        SortBy = SortByValue.NeuronCreationTimestamp,
-                        SortOrder = SortOrderValue.Descending,
-                        PageSize = exRefs.Count()
-                    },
-                    this.appUserId
-                );
-            AssertionConcern.AssertStateTrue(keys.Count() == qr.Count, "At least one local copy of a specified External Reference was not found.");
-            var result = new Dictionary<string, Coding.Neuron>();
-
-            foreach (var n in qr.Items)
-            {
-                Guid? r = null;
-                if (Guid.TryParse(n?.Id, out Guid g))
-                    r = g;
-                result.Add(
-                    exRefs.Single(er => er.Url == n.ExternalReferenceUrl).Key,
-                    n.ToEnsemble()
-                );
-            }
-
-            return result;
         }
     }
 }

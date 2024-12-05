@@ -4,6 +4,16 @@
     <TargetFramework>netstandard2.0</TargetFramework>
 	<AssemblyName>ei8.Cortex.Coding.Persistence</AssemblyName>
     <RootNamespace>ei8.Cortex.Coding.Persistence</RootNamespace>
+    <PackageId>ei8.Cortex.Coding.Persistence</PackageId>
+    <PackageVersion>0.0.11</PackageVersion>
+    <Authors>Elmer Roderick Niem Bool</Authors>
+    <Description>Cortex Coding Persistence</Description>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>Initial commit.</PackageReleaseNotes>
+    <PackageTags>cortex coding persistence</PackageTags>
+    <Version>0.0.11</Version>
+    <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -11,17 +21,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ei8.Cortex.Coding" Version="0.0.6" />
+    <PackageReference Include="ei8.Cortex.IdentityAccess.Client" Version="0.2.2" />
     <PackageReference Include="ei8.Cortex.Library.Client" Version="0.3.15" />
     <PackageReference Include="ei8.Data.Aggregate.Port.Adapter.In.InProcess" Version="0.1.4" />
     <PackageReference Include="ei8.Data.ExternalReference.Port.Adapter.In.InProcess" Version="0.1.0" />
     <PackageReference Include="ei8.Data.Tag.Port.Adapter.In.InProcess" Version="0.1.11" />
     <PackageReference Include="ei8.EventSourcing.Client" Version="0.2.12" />
+    <PackageReference Include="ei8.Extensions.DependencyInjection" Version="0.0.2" />
     <PackageReference Include="neurUL.Cortex.Common" Version="0.1.4" />
     <PackageReference Include="neurUL.Cortex.Port.Adapter.In.InProcess" Version="0.1.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\cortex-coding\src\main\Coding.csproj" />
   </ItemGroup>
 
 </Project>

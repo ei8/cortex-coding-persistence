@@ -3,41 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
     public static class EnsembleRepositoryExtensions
     {
-        public static async Task<Neuron> GetExternalReferenceAsync(
-            this IEnsembleRepository ensembleRepository,
-            object key
-        ) =>
-            (await ensembleRepository.GetExternalReferencesAsync(new[] { key })).Values.SingleOrDefault();
-
-        public static async Task<IDictionary<object, Neuron>> GetExternalReferencesAsync(
-            this IEnsembleRepository ensembleRepository,
-            IEnumerable<object> keys       
-            )
-        {
-            var keyConverter = new Func<object, string>(o =>
-            {
-                var result = o as string;
-                if (o is MemberInfo)
-                    result = ExternalReference.ToKeyString((MemberInfo)o);
-                else if (o is Enum)
-                    result = ExternalReference.ToKeyString((Enum)o);
-
-                return result;
-            });
-            var origDict = await ensembleRepository.GetExternalReferencesAsync(
-                keys.Select(t => keyConverter(t)).ToArray()
-            );
-            return origDict.ToDictionary(kvpK => keys.Single(t => keyConverter(t) == kvpK.Key), kvpE => kvpE.Value);
-        }
-
         public static async Task UniquifyAsync(
             this IEnsembleRepository ensembleRepository, 
             Ensemble ensemble,
