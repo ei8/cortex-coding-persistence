@@ -3,11 +3,11 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public interface INetworkTransactionService
+    public interface IEnsembleTransactionService
     {
         Task SaveAsync(
             ITransaction transaction,
-            Network Network
+            Ensemble ensemble
         );
     }
 }

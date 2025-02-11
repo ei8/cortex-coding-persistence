@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public class NetworkRepository : INetworkRepository
+    public class EnsembleRepository : IEnsembleRepository
     {
         private readonly INeuronQueryClient neuronQueryClient;
         private readonly string cortexLibraryOutBaseUrl;
         private readonly int configQueryResultLimit;
         private readonly string appUserId;
 
-        public NetworkRepository(
+        public EnsembleRepository(
             INeuronQueryClient neuronQueryClient,
             string cortexLibraryOutBaseUrl,
             int configQueryResultLimit,
@@ -67,7 +67,7 @@ namespace ei8.Cortex.Coding.Persistence
                 $"Query results cannot exceed {queryResultLimit} items. Query: {query.ToString()}"
             );
 
-            return new QueryResult(qr.ToNetwork(), qr.UserNeuronId);
+            return new QueryResult(qr.ToEnsemble(), qr.UserNeuronId);
         }
     }
 }

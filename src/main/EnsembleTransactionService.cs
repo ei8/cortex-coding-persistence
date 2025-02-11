@@ -7,22 +7,22 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public class NetworkTransactionService : INetworkTransactionService
+    public class EnsembleTransactionService : IEnsembleTransactionService
     {
         private readonly INeuronAdapter neuronAdapter;
         private readonly ITerminalAdapter terminalAdapter;
         private readonly Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter;
         private readonly Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter;
         private readonly Data.ExternalReference.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter;
-        private readonly INetworkTransactionData transactionData;
+        private readonly IEnsembleTransactionData transactionData;
 
-        public NetworkTransactionService(
+        public EnsembleTransactionService(
             neurUL.Cortex.Port.Adapter.In.InProcess.INeuronAdapter neuronAdapter,
             neurUL.Cortex.Port.Adapter.In.InProcess.ITerminalAdapter terminalAdapter,
             ei8.Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter,
             ei8.Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter,
             ei8.Data.ExternalReference.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter,
-            INetworkTransactionData transactionData
+            IEnsembleTransactionData transactionData
         )
         {
             this.neuronAdapter = neuronAdapter;
@@ -35,13 +35,13 @@ namespace ei8.Cortex.Coding.Persistence
 
         public async Task SaveAsync(
            ITransaction transaction,
-           Network Network
+           Ensemble ensemble
         )
         {
-            var transientItems = Network.GetItems().Where(ei => ei.IsTransient);
+            var transientItems = ensemble.GetItems().Where(ei => ei.IsTransient);
             foreach (var ei in transientItems)
             {
-                await NetworkTransactionService.SaveItemAsync(
+                await EnsembleTransactionService.SaveItemAsync(
                     transaction,
                     ei,
                     this.neuronAdapter,
@@ -57,7 +57,7 @@ namespace ei8.Cortex.Coding.Persistence
 
         private static async Task SaveItemAsync(
            ITransaction transaction,
-           INetworkItem item,
+           IEnsembleItem item,
            neurUL.Cortex.Port.Adapter.In.InProcess.INeuronAdapter neuronAdapter,
            neurUL.Cortex.Port.Adapter.In.InProcess.ITerminalAdapter terminalAdapter,
            ei8.Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter,
