@@ -5,21 +5,21 @@ using System.Linq;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public class EnsembleTransactionData : IEnsembleTransactionData
+    public class NetworkTransactionData : INetworkTransactionData
     {
-        private readonly IDictionary<Guid, IEnsembleItem> savedTransients;
+        private readonly IDictionary<Guid, INetworkItem> savedTransients;
         private readonly IDictionary<Guid, Neuron> replacedNeurons;
 
-        public EnsembleTransactionData()
+        public NetworkTransactionData()
         {
-            this.savedTransients = new Dictionary<Guid, IEnsembleItem>();
+            this.savedTransients = new Dictionary<Guid, INetworkItem>();
             this.replacedNeurons = new Dictionary<Guid, Neuron>();
         }
 
-        public void AddSavedTransient(IEnsembleItem value) => 
+        public void AddSavedTransient(INetworkItem value) => 
             this.savedTransients.Add(value.Id, 
                 value is Neuron ne ?
-                (IEnsembleItem) Neuron.CloneAsPersistent(ne) : 
+                (INetworkItem) Neuron.CloneAsPersistent(ne) : 
                 Terminal.CloneAsPersistent((Terminal) value)
             );
 
@@ -36,7 +36,7 @@ namespace ei8.Cortex.Coding.Persistence
                 replacement.Id :
                 originalId;
 
-        public bool TryGetSavedTransient(string tag, IEnumerable<Guid> currentPostsynapticIds, out Ensemble result)
+        public bool TryGetSavedTransient(string tag, IEnumerable<Guid> currentPostsynapticIds, out Network result)
         {
             bool bResult = false;
             result = null;
@@ -62,7 +62,7 @@ namespace ei8.Cortex.Coding.Persistence
                     $"Redundant Neurons with postsynaptic Neurons '{string.Join(", ", currentPostsynapticIds)}' encountered: {string.Join(", ", distinctPresynapticIds)}"
                 );
 
-                var tempResult = new Ensemble();
+                var tempResult = new Network();
                 tempResult.AddReplace(resultNeurons.Single(rn => rn.Id == distinctPresynapticIds.Single()));
                 resultTerminals.ToList().ForEach(rt => tempResult.AddReplace(rt));
                 result = tempResult;

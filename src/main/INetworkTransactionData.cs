@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public interface IEnsembleTransactionData
+    public interface INetworkTransactionData
     {
-        void AddSavedTransient(IEnsembleItem value);
+        void AddSavedTransient(INetworkItem value);
 
         IEnumerable<Neuron> SavedTransientNeurons { get; }
 
@@ -17,6 +17,6 @@ namespace ei8.Cortex.Coding.Persistence
 
         bool IsReplaced(Guid value);
 
-        bool TryGetSavedTransient(string tag, IEnumerable<Guid> currentPostsynapticIds, out Ensemble result);
+        bool TryGetSavedTransient(string tag, IEnumerable<Guid> currentPostsynapticIds, out Network result);
     }
 }
