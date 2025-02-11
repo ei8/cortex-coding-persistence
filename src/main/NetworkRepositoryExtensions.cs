@@ -7,71 +7,71 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public static class EnsembleRepositoryExtensions
+    public static class NetworkRepositoryExtensions
     {
         public static async Task UniquifyAsync(
-            this IEnsembleRepository ensembleRepository, 
-            Ensemble ensemble,
-            IEnsembleTransactionData transactionData = null,
-            IDictionary<string, Ensemble> cache = null
+            this INetworkRepository NetworkRepository, 
+            Network Network,
+            INetworkTransactionData transactionData = null,
+            IDictionary<string, Network> cache = null
         )
         {
-            await EnsembleRepositoryExtensions.UniquifyNeuronsAsync(
-                ensembleRepository, 
-                ensemble, 
+            await NetworkRepositoryExtensions.UniquifyNeuronsAsync(
+                NetworkRepository, 
+                Network, 
                 transactionData,
                 cache
             );
-            await EnsembleRepositoryExtensions.UniquifyTerminalsAsync(
-                ensembleRepository,
-                ensemble
+            await NetworkRepositoryExtensions.UniquifyTerminalsAsync(
+                NetworkRepository,
+                Network
             );           
         }
 
         private static async Task UniquifyNeuronsAsync(
-            IEnsembleRepository ensembleRepository, 
-            Ensemble ensemble, 
-            IEnsembleTransactionData transactionData = null,
-            IDictionary<string, Ensemble> cache = null
+            INetworkRepository NetworkRepository, 
+            Network Network, 
+            INetworkTransactionData transactionData = null,
+            IDictionary<string, Network> cache = null
         )
         {
-            var currentNeuronIds = ensemble.GetItems<Neuron>()
-                .Where(n => EnsembleRepositoryExtensions.IsTransientNeuronWithPersistentPostsynaptics(ensemble, n))
+            var currentNeuronIds = Network.GetItems<Neuron>()
+                .Where(n => NetworkRepositoryExtensions.IsTransientNeuronWithPersistentPostsynaptics(Network, n))
                 .Select(n => n.Id);
             var nextNeuronIds = new List<Guid>();
             var processedNeuronIds = new List<Guid>();
 
-            transactionData = transactionData ?? new EnsembleTransactionData();
+            transactionData = transactionData ?? new NetworkTransactionData();
 
             while (currentNeuronIds.Any())
             {
                 nextNeuronIds.Clear();
                 foreach (var currentNeuronId in currentNeuronIds.ToArray())
                 {
-                    EnsembleRepositoryExtensions.Log($"Optimizing '{currentNeuronId}'...");
+                    NetworkRepositoryExtensions.Log($"Optimizing '{currentNeuronId}'...");
                     if (transactionData.IsReplaced(currentNeuronId))
                     {
-                        EnsembleRepositoryExtensions.Log($"> Neuron replaced - skipped.");
+                        NetworkRepositoryExtensions.Log($"> Neuron replaced - skipped.");
                         continue;
                     }
 
                     AssertionConcern.AssertStateTrue(
-                        ensemble.TryGetById(currentNeuronId, out Neuron currentNeuron),
-                        $"'currentNeuron' '{currentNeuronId}' must exist in ensemble."
+                        Network.TryGetById(currentNeuronId, out Neuron currentNeuron),
+                        $"'currentNeuron' '{currentNeuronId}' must exist in Network."
                     );
 
-                    EnsembleRepositoryExtensions.Log($"Tag: '{currentNeuron.Tag}'");
+                    NetworkRepositoryExtensions.Log($"Tag: '{currentNeuron.Tag}'");
 
-                    var postsynaptics = ensemble.GetPostsynapticNeurons(currentNeuronId);
-                    if (EnsembleRepositoryExtensions.ContainsTransientUnprocessed(postsynaptics, processedNeuronIds))
+                    var postsynaptics = Network.GetPostsynapticNeurons(currentNeuronId);
+                    if (NetworkRepositoryExtensions.ContainsTransientUnprocessed(postsynaptics, processedNeuronIds))
                     {
-                        EnsembleRepositoryExtensions.Log($"> Transient unprocessed postsynaptic found - processing deferred.");
+                        NetworkRepositoryExtensions.Log($"> Transient unprocessed postsynaptic found - processing deferred.");
                         nextNeuronIds.Add(currentNeuronId);
                         continue;
                     }
                     else if (processedNeuronIds.Contains(currentNeuronId))
                     {
-                        EnsembleRepositoryExtensions.Log($"> Already processed - skipped.");
+                        NetworkRepositoryExtensions.Log($"> Already processed - skipped.");
                         continue;
                     }
 
@@ -79,10 +79,10 @@ namespace ei8.Cortex.Coding.Persistence
 
                     if (currentNeuron.IsTransient)
                     {
-                        EnsembleRepositoryExtensions.Log($"> Neuron marked as transient. Retrieving persistent identical granny with postsynaptics " +
+                        NetworkRepositoryExtensions.Log($"> Neuron marked as transient. Retrieving persistent identical granny with postsynaptics " +
                             $"'{string.Join(", ", postsynaptics.Select(n => n.Id))}'.");
-                        var identical = await EnsembleRepositoryExtensions.GetPersistentIdentical(
-                            ensembleRepository,
+                        var identical = await NetworkRepositoryExtensions.GetPersistentIdentical(
+                            NetworkRepository,
                             postsynaptics.Select(n => n.Id),
                             currentNeuron.Tag,
                             transactionData,
@@ -91,43 +91,43 @@ namespace ei8.Cortex.Coding.Persistence
 
                         if (identical != null)
                         {
-                            EnsembleRepositoryExtensions.Log($"> Persistent identical granny found - updating presynaptics and containing ensemble.");
-                            EnsembleRepositoryExtensions.UpdateDendrites(
-                                ensemble,
+                            NetworkRepositoryExtensions.Log($"> Persistent identical granny found - updating presynaptics and containing Network.");
+                            NetworkRepositoryExtensions.UpdateDendrites(
+                                Network,
                                 currentNeuronId,
                                 identical.Id
                             );
-                            EnsembleRepositoryExtensions.RemoveTerminals(
-                                ensemble,
+                            NetworkRepositoryExtensions.RemoveTerminals(
+                                Network,
                                 currentNeuronId
                             );
-                            ensemble.AddReplace(identical);
-                            ensemble.Remove(currentNeuronId);
+                            Network.AddReplace(identical);
+                            Network.Remove(currentNeuronId);
                             transactionData.AddReplacedNeuron(currentNeuronId, identical);
-                            EnsembleRepositoryExtensions.Log($"> Neuron replaced and removed.");
+                            NetworkRepositoryExtensions.Log($"> Neuron replaced and removed.");
                             nextPostsynapticId = identical.Id;
                         }
                         else
                         {
-                            EnsembleRepositoryExtensions.Log($"> Persistent identical granny was NOT found.");
+                            NetworkRepositoryExtensions.Log($"> Persistent identical granny was NOT found.");
                             nextPostsynapticId = currentNeuronId;
                         }
                     }
                     else
                     {
-                        EnsembleRepositoryExtensions.Log($"> Neuron NOT marked as transient.");
+                        NetworkRepositoryExtensions.Log($"> Neuron NOT marked as transient.");
                         nextPostsynapticId = currentNeuronId;
                     }
 
                     processedNeuronIds.Add(nextPostsynapticId);
-                    var presynaptics = ensemble.GetPresynapticNeurons(nextPostsynapticId);
+                    var presynaptics = Network.GetPresynapticNeurons(nextPostsynapticId);
                     presynaptics.ToList().ForEach(n =>
                     {
-                        EnsembleRepositoryExtensions.Log($"> Adding presynaptic '{n.Id}' to nextNeuronIds.");
+                        NetworkRepositoryExtensions.Log($"> Adding presynaptic '{n.Id}' to nextNeuronIds.");
                         nextNeuronIds.Add(n.Id);
                     });
                 }
-                EnsembleRepositoryExtensions.Log($"Setting next batch of {nextNeuronIds.Count()} ids.");
+                NetworkRepositoryExtensions.Log($"Setting next batch of {nextNeuronIds.Count()} ids.");
                 currentNeuronIds = nextNeuronIds.ToArray();
             }
         }
@@ -139,35 +139,35 @@ namespace ei8.Cortex.Coding.Persistence
         }
 
         private static async Task UniquifyTerminalsAsync(
-            IEnsembleRepository ensembleRepository,
-            Ensemble ensemble
+            INetworkRepository NetworkRepository,
+            Network Network
         )
         {
-            var terminalIds = ensemble.GetItems<Terminal>()
-                .Where(t => EnsembleRepositoryExtensions.IsTransientTerminalLinkingPersistentNeurons(ensemble, t))
+            var terminalIds = Network.GetItems<Terminal>()
+                .Where(t => NetworkRepositoryExtensions.IsTransientTerminalLinkingPersistentNeurons(Network, t))
                 .Select(t => t.Id);
 
             foreach(var tId in terminalIds)
             {
                 if(
-                    ensemble.TryGetById(tId, out Terminal currentTerminal) &&
-                    await EnsembleRepositoryExtensions.HasPersistentIdentical(
-                        ensembleRepository,
+                    Network.TryGetById(tId, out Terminal currentTerminal) &&
+                    await NetworkRepositoryExtensions.HasPersistentIdentical(
+                        NetworkRepository,
                         currentTerminal.PresynapticNeuronId,
                         currentTerminal.PostsynapticNeuronId
                     )
                 )
-                ensemble.Remove(tId);
+                Network.Remove(tId);
             }
         }
 
         private static async Task<bool> HasPersistentIdentical(
-            IEnsembleRepository ensembleRepository, 
+            INetworkRepository NetworkRepository, 
             Guid presynapticNeuronId, 
             Guid postsynapticNeuronId
         )
         {
-            var queryResult = await ensembleRepository.GetByQueryAsync(
+            var queryResult = await NetworkRepository.GetByQueryAsync(
                     new Library.Common.NeuronQuery()
                     {
                         Id = new string[] { presynapticNeuronId.ToString() },
@@ -179,22 +179,22 @@ namespace ei8.Cortex.Coding.Persistence
                     false
                 );
 
-            return queryResult.Ensemble.GetItems<Neuron>().Any();
+            return queryResult.Network.GetItems<Neuron>().Any();
         }
 
-        private static bool IsTransientTerminalLinkingPersistentNeurons(Ensemble ensemble, Terminal t)
+        private static bool IsTransientTerminalLinkingPersistentNeurons(Network Network, Terminal t)
         {
             return t.IsTransient &&
-                ensemble.TryGetById(t.PresynapticNeuronId, out Neuron pre) &&
-                ensemble.TryGetById(t.PostsynapticNeuronId, out Neuron post) &&
+                Network.TryGetById(t.PresynapticNeuronId, out Neuron pre) &&
+                Network.TryGetById(t.PostsynapticNeuronId, out Neuron post) &&
                 !pre.IsTransient &&
                 !post.IsTransient;
         }
 
-        private static bool IsTransientNeuronWithPersistentPostsynaptics(Ensemble ensemble, Neuron neuron) =>
-            neuron.IsTransient && ensemble.GetPostsynapticNeurons(neuron.Id).All(postn => !postn.IsTransient);
+        private static bool IsTransientNeuronWithPersistentPostsynaptics(Network Network, Neuron neuron) =>
+            neuron.IsTransient && Network.GetPostsynapticNeurons(neuron.Id).All(postn => !postn.IsTransient);
 
-        private static void UpdateDendrites(Ensemble result, Guid oldPostsynapticId, Guid newPostsynapticId)
+        private static void UpdateDendrites(Network result, Guid oldPostsynapticId, Guid newPostsynapticId)
         {
             var currentDendrites = result.GetDendrites(oldPostsynapticId).ToArray();
             foreach (var currentDendrite in currentDendrites)
@@ -212,7 +212,7 @@ namespace ei8.Cortex.Coding.Persistence
             }
         }
 
-        private static void RemoveTerminals(Ensemble result, Guid presynapticId)
+        private static void RemoveTerminals(Network result, Guid presynapticId)
         {
             var terminals = result.GetTerminals(presynapticId).ToArray();
             foreach (var terminal in terminals)
@@ -225,17 +225,17 @@ namespace ei8.Cortex.Coding.Persistence
         ) => posts.Any(n => n.IsTransient && !processedNeuronIds.Contains(n.Id));
 
         private static async Task<Neuron> GetPersistentIdentical(
-            IEnsembleRepository ensembleRepository,
+            INetworkRepository NetworkRepository,
             IEnumerable<Guid> currentPostsynapticIds,
             string currentTag,
-            IEnsembleTransactionData transactionData,
-            IDictionary<string, Ensemble> cache = null
+            INetworkTransactionData transactionData,
+            IDictionary<string, Network> cache = null
         )
         {
             Neuron result = null;
 
-            var similarGrannyFromCacheOrDb = await EnsembleRepositoryExtensions.GetEnsemble(
-                ensembleRepository,
+            var similarGrannyFromCacheOrDb = await NetworkRepositoryExtensions.GetNetwork(
+                NetworkRepository,
                 cache,
                 transactionData,
                 currentTag,
@@ -267,10 +267,10 @@ namespace ei8.Cortex.Coding.Persistence
             return result;
         }
 
-        private static async Task<Ensemble> GetEnsemble(
-            IEnsembleRepository ensembleRepository, 
-            IDictionary<string, Ensemble> cache,
-            IEnsembleTransactionData ensembleTransactionData,
+        private static async Task<Network> GetNetwork(
+            INetworkRepository NetworkRepository, 
+            IDictionary<string, Network> cache,
+            INetworkTransactionData NetworkTransactionData,
             string currentTag,
             IEnumerable<Guid> currentPostsynapticIds
         )
@@ -279,12 +279,12 @@ namespace ei8.Cortex.Coding.Persistence
             if (
                 (
                     cache == null || 
-                    !cache.TryGetValue(cacheId, out Ensemble result)
+                    !cache.TryGetValue(cacheId, out Network result)
                 ) &&
-                !ensembleTransactionData.TryGetSavedTransient(currentTag, currentPostsynapticIds, out result)
+                !NetworkTransactionData.TryGetSavedTransient(currentTag, currentPostsynapticIds, out result)
                 )
             {
-                var tempResult = await ensembleRepository.GetByQueryAsync(
+                var tempResult = await NetworkRepository.GetByQueryAsync(
                     new Library.Common.NeuronQuery()
                     {
                         Tag = !string.IsNullOrEmpty(currentTag) ? new string[] { currentTag } : null,
@@ -294,9 +294,9 @@ namespace ei8.Cortex.Coding.Persistence
                     }
                 );
 
-                if (tempResult.Ensemble.GetItems().Count() > 0)
+                if (tempResult.Network.GetItems().Count() > 0)
                 {
-                    result = tempResult.Ensemble;
+                    result = tempResult.Network;
 
                     if (cache != null)
                         cache.Add(cacheId, result);

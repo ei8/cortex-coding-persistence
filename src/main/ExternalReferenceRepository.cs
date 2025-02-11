@@ -229,7 +229,7 @@ namespace ei8.Cortex.Coding.Persistence
                     r = g;
                 result.Add(
                     getResult.Config.Single(er => er.Url == n.ExternalReferenceUrl).Key,
-                    n.ToEnsemble()
+                    n.ToNetwork()
                 );
             }
 
