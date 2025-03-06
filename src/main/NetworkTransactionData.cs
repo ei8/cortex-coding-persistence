@@ -58,15 +58,18 @@ namespace ei8.Cortex.Coding.Persistence
             { 
                 var distinctPresynapticIds = resultTerminals.Select(rt => rt.PresynapticNeuronId).Distinct();
                 AssertionConcern.AssertStateTrue(
-                    distinctPresynapticIds.Count() == 1,
+                    distinctPresynapticIds.Count() <= 1,
                     $"Redundant Neurons with postsynaptic Neurons '{string.Join(", ", currentPostsynapticIds)}' encountered: {string.Join(", ", distinctPresynapticIds)}"
                 );
 
                 var tempResult = new Network();
-                tempResult.AddReplace(resultNeurons.Single(rn => rn.Id == distinctPresynapticIds.Single()));
+                if (distinctPresynapticIds.Any())
+                    tempResult.AddReplace(resultNeurons.Single(rn => rn.Id == distinctPresynapticIds.Single()));
+                else if (resultNeurons.Any())
+                    tempResult.AddReplace(resultNeurons.Single());
                 resultTerminals.ToList().ForEach(rt => tempResult.AddReplace(rt));
                 result = tempResult;
-                bResult = true;
+                bResult = tempResult.GetItems().Any();
             }
 
             return bResult;
