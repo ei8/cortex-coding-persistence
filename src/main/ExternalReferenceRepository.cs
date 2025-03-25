@@ -32,7 +32,6 @@ namespace ei8.Cortex.Coding.Persistence
         private readonly string eventSourcingOutBaseUrl;
         private readonly string cortexLibraryOutBaseUrl;
         private readonly string identityAccessOutBaseUrl;
-        private readonly IOptions<List<ExternalReference>> externalReferences1;
         private readonly IEnumerable<ExternalReference> externalReferencesConfig;
         private readonly string appUserId;
 
