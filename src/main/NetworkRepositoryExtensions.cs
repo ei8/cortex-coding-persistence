@@ -108,7 +108,7 @@ namespace ei8.Cortex.Coding.Persistence
                             network.AddReplace(identical);
                             network.Remove(currentNeuronId);
                             transactionData.AddReplacedNeuron(currentNeuronId, identical);
-                            NetworkRepositoryExtensions.Log($"> Neuron replaced and removed.");
+                            NetworkRepositoryExtensions.Log($"> Neuron removed and replaced with '{identical.Id}'");
                             nextPostsynapticId = identical.Id;
                         }
                         else
@@ -127,7 +127,7 @@ namespace ei8.Cortex.Coding.Persistence
                     var presynaptics = network.GetPresynapticNeurons(nextPostsynapticId);
                     presynaptics.ToList().ForEach(n =>
                     {
-                        NetworkRepositoryExtensions.Log($"> Adding presynaptic '{n.Id}' to nextNeuronIds.");
+                        NetworkRepositoryExtensions.Log($"> Adding presynaptic '{n.Id}' of '{nextPostsynapticId}' to nextNeuronIds.");
                         NetworkRepositoryExtensions.AddIfNotExists(n.Id, nextNeuronIds);
                     });
                 }

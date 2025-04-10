@@ -7,6 +7,7 @@ namespace ei8.Cortex.Coding.Persistence.Wrappers
     [neurULKey("System.String")]
     public class StringWrapper : IValueWrapper<string>
     {
+        // TODO:0 update so it is saved like an InstanceValue
         public StringWrapper() : this(null)
         {            
         }
