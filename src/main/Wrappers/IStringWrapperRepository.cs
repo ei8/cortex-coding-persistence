@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Collections.Generic;
 using System;
+using ei8.Cortex.Coding.Wrappers;
 
 namespace ei8.Cortex.Coding.Persistence.Wrappers
 {

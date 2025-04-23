@@ -63,12 +63,12 @@ namespace ei8.Cortex.Coding.Persistence
                     NetworkRepositoryExtensions.Log($"> Tag: '{currentNeuron.Tag}'");
 
                     var postsynaptics = network.GetPostsynapticNeurons(currentNeuronId);
-                    var transientUnprocessed = NetworkRepositoryExtensions.GetTransientUnprocessed(postsynaptics, processedNeuronIds);
-                    if (transientUnprocessed.Any())
+                    var transientUnprocessedPostsynaptics = NetworkRepositoryExtensions.GetTransientUnprocessed(postsynaptics, processedNeuronIds);
+                    if (transientUnprocessedPostsynaptics.Any())
                     {
                         NetworkRepositoryExtensions.Log(
                             $"> Transient unprocessed postsynaptics found - processing deferred: " +
-                            $"{string.Join(", ", transientUnprocessed.Select(n => n.Id))}"
+                            $"{string.Join(", ", transientUnprocessedPostsynaptics.Select(n => n.Id))}"
                         );
                         NetworkRepositoryExtensions.AddIfNotExists(currentNeuronId, nextNeuronIds);
                         continue;
@@ -127,7 +127,7 @@ namespace ei8.Cortex.Coding.Persistence
                     var presynaptics = network.GetPresynapticNeurons(nextPostsynapticId);
                     presynaptics.ToList().ForEach(n =>
                     {
-                        NetworkRepositoryExtensions.Log($"> Adding presynaptic '{n.Id}' of '{nextPostsynapticId}' to nextNeuronIds.");
+                        NetworkRepositoryExtensions.Log($"> Adding presynaptic '{n.Id}' of '{nextPostsynapticId}' to nextNeuronIds...");
                         NetworkRepositoryExtensions.AddIfNotExists(n.Id, nextNeuronIds);
                     });
                 }
@@ -139,7 +139,14 @@ namespace ei8.Cortex.Coding.Persistence
         private static void AddIfNotExists(Guid neuronId, List<Guid> nextNeuronIds)
         {
             if (!nextNeuronIds.Contains(neuronId))
+            {
                 nextNeuronIds.Add(neuronId);
+                NetworkRepositoryExtensions.Log($"> DONE.");
+            }
+            else
+            {
+                NetworkRepositoryExtensions.Log($"> Already added - IGNORED.");
+            }
         }
 
         [Conditional("UNIQLOG")]

@@ -2,6 +2,8 @@
 using neurUL.Cortex.Domain.Model.Neurons;
 using neurUL.Cortex.Port.Adapter.In.InProcess;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -39,6 +41,7 @@ namespace ei8.Cortex.Coding.Persistence
         )
         {
             var transientItems = network.GetItems().Where(ei => ei.IsTransient);
+            NetworkTransactionService.LogTransientItems(transientItems);
             foreach (var ei in transientItems)
             {
                 await NetworkTransactionService.SaveItemAsync(
@@ -53,6 +56,13 @@ namespace ei8.Cortex.Coding.Persistence
                 
                 this.transactionData.AddSavedTransient(ei);
             }
+        }
+
+        [Conditional("TRANLOG")]
+        private static void LogTransientItems(IEnumerable<INetworkItem> transientItems)
+        {
+            foreach (var ti in transientItems)
+                Debug.WriteLine($"Saving transient {ti.GetType().Name} '{ti.Id}'");
         }
 
         private static async Task SaveItemAsync(
