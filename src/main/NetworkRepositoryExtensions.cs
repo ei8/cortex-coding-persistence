@@ -187,8 +187,8 @@ namespace ei8.Cortex.Coding.Persistence
             var queryResult = await networkRepository.GetByQueryAsync(
                     new Library.Common.NeuronQuery()
                     {
-                        Id = new string[] { presynapticNeuronId.ToString() },
-                        Postsynaptic = new string[] { postsynapticNeuronId.ToString() },
+                        Id = new[] { presynapticNeuronId.ToString() },
+                        Postsynaptic = new[] { postsynapticNeuronId.ToString() },
                         // TODO: how should this be handled
                         NeuronActiveValues = Library.Common.ActiveValues.All,
                         TerminalActiveValues = Library.Common.ActiveValues.All
@@ -314,7 +314,7 @@ namespace ei8.Cortex.Coding.Persistence
                 var tempResult = await networkRepository.GetByQueryAsync(
                     new Library.Common.NeuronQuery()
                     {
-                        Tag = !string.IsNullOrEmpty(currentTag) ? new string[] { currentTag } : null,
+                        Tag = !string.IsNullOrEmpty(currentTag) ? new[] { currentTag } : null,
                         Postsynaptic = currentPostsynapticIds.Select(pi => pi.ToString()),
                         DirectionValues = Library.Common.DirectionValues.Outbound,
                         Depth = 1

@@ -34,28 +34,19 @@ namespace ei8.Cortex.Coding.Persistence
         public async Task<QueryResult> GetByQueryAsync(NeuronQuery query) =>
             await this.GetByQueryAsync(query, true);
 
-        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query, string userId) =>
-            await this.GetByQueryAsync(query, userId, true);
-
-        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query, bool restrictQueryResultCount) =>
-            await this.GetByQueryAsync(query, this.appUserId, restrictQueryResultCount);
-
-        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query, string userId, bool restrictQueryResultCount)
+        public async Task<QueryResult> GetByQueryAsync(NeuronQuery query, bool restrictQueryResultCount)
         {
             AssertionConcern.AssertArgumentNotNull(query, nameof(query));
-
-            userId = userId ?? this.appUserId;
 
             var qr = await neuronQueryClient.GetNeuronsInternal(
                 cortexLibraryOutBaseUrl,
                 query,
-                userId
+                this.appUserId
             );
 
-            // TODO: test if this works as expected
             AssertionConcern.AssertStateFalse(
                 qr.Items.Any(i => i.Validation.RestrictionReasons.Any()),
-                $"At least one query result is inaccessible to the specified userId '{userId}': " +
+                $"At least one query result is inaccessible to the specified userId '{this.appUserId}': " +
                 $"'{string.Join("', '", qr.Items.SelectMany(i => i.Validation.RestrictionReasons))}'."
             );
 

@@ -10,7 +10,6 @@ namespace ei8.Cortex.Coding.Persistence.Wrappers
     {
         Task<IEnumerable<StringWrapper>> GetByIds(
             IEnumerable<Guid> ids,
-            string userId,
             CancellationToken token = default
         );
 
