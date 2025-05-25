@@ -137,14 +137,14 @@ namespace ei8.Cortex.Coding.Persistence
                     );
                 }
 
-                if (!string.IsNullOrWhiteSpace(neuron.ExternalReferenceUrl))
+                if (!string.IsNullOrWhiteSpace(neuron.MirrorUrl))
                 {
                     expectedVersion = await transaction.InvokeAdapterAsync(
                         neuron.Id,
                         typeof(ei8.Data.ExternalReference.Domain.Model.UrlChanged).Assembly.GetEventTypes(),
                         async (ev) => await externalReferenceItemAdapter.ChangeUrl(
                             neuron.Id,
-                            neuron.ExternalReferenceUrl,
+                            neuron.MirrorUrl,
                             unusedAuthorId,
                             ev
                         ),
