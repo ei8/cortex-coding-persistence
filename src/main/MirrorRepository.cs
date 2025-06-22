@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public class MirrorRepository : IMirrorRepository
+    public class MirrorRepository : MirrorRepositoryBase, IMirrorRepository
     {
         private struct GetResult
         {
@@ -19,8 +19,6 @@ namespace ei8.Cortex.Coding.Persistence
         }
 
         private readonly INetworkRepository networkRepository;
-        private readonly ITransaction transaction;
-        private readonly INetworkTransactionService networkTransactionService;
         private readonly IEnumerable<MirrorConfig> mirrorConfigs;
 
         public MirrorRepository(
@@ -28,61 +26,19 @@ namespace ei8.Cortex.Coding.Persistence
             ITransaction transaction,
             INetworkTransactionService networkTransactionService,
             IOptions<List<MirrorConfig>> mirrorConfigs
+        ) : base(
+            transaction, 
+            networkTransactionService
         )
         {
             AssertionConcern.AssertArgumentNotNull(networkRepository, nameof(networkRepository));
-            AssertionConcern.AssertArgumentNotNull(transaction, nameof(transaction));
-            AssertionConcern.AssertArgumentNotNull(networkTransactionService, nameof(networkTransactionService));
             AssertionConcern.AssertArgumentNotNull(mirrorConfigs, nameof(mirrorConfigs));
 
             this.networkRepository = networkRepository;
-            this.transaction = transaction;
-            this.networkTransactionService = networkTransactionService;
             this.mirrorConfigs = mirrorConfigs.Value.ToArray();
         }
 
-        public async Task<bool> Initialize(IEnumerable<string> keys)
-        {
-            var result = false;
-
-            var missingMirrorsConfig = await this.GetAllMissingAsync(
-                keys
-            );
-
-            if (missingMirrorsConfig.Any())
-            {
-                var newMirrors = missingMirrorsConfig.Select(mmc =>
-                    Neuron.CreateTransient(
-                        Guid.NewGuid(),
-                        null,
-                        mmc.Url,
-                        null
-                    )
-                );
-
-                await this.Save(newMirrors);
-
-                result = true;
-            }
-
-            return result;
-        }
-
-        // TODO: specify region to save values
-        public async Task Save(IEnumerable<Neuron> values)
-        {
-            var network = new Network();
-
-            foreach (var n in values)
-                network.AddReplace(n);
-
-            await this.networkTransactionService.SaveAsync(
-                this.transaction,
-                network
-            );
-        }
-
-        public async Task<IEnumerable<MirrorConfig>> GetAllMissingAsync(IEnumerable<string> keys) => 
+        public override async Task<IEnumerable<MirrorConfig>> GetAllMissingAsync(IEnumerable<string> keys) => 
             (await this.GetByKeysCore(keys, false)).Missing;
 
         private async Task<GetResult> GetByKeysCore(IEnumerable<string> keys, bool throwErrorIfMissing)
@@ -146,7 +102,7 @@ namespace ei8.Cortex.Coding.Persistence
                 );
         }
 
-        private static IEnumerable<TKey> ValidateRequiredItems<TKey, TItem>(
+        internal static IEnumerable<TKey> ValidateRequiredItems<TKey, TItem>(
             string errorMessage,
             IEnumerable<TKey> keys,
             IEnumerable<TItem> items,
