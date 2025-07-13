@@ -11,11 +11,12 @@ namespace ei8.Cortex.Coding.Persistence
     public class InitializingMirrorRepository : MirrorRepositoryBase, IMirrorRepository
     {
         private readonly IEnumerable<MirrorConfig> mirrorConfigs;
-        private IEnumerable<Neuron> initializedMirrors; 
+        private readonly INetworkTransactionData networkTransactionData;
 
         public InitializingMirrorRepository(
             ITransaction transaction,
             INetworkTransactionService networkTransactionService,
+            INetworkTransactionData networkTransactionData,
             IOptions<List<MirrorConfig>> mirrorConfigs
         ) : base(
             transaction, 
@@ -25,14 +26,7 @@ namespace ei8.Cortex.Coding.Persistence
             AssertionConcern.AssertArgumentNotNull(mirrorConfigs, nameof(mirrorConfigs));
 
             this.mirrorConfigs = mirrorConfigs.Value.ToArray();
-            this.initializedMirrors = null;
-        }
-
-        public override Task Save(IEnumerable<Neuron> values)
-        {
-            var result = base.Save(values);
-            this.initializedMirrors = values;
-            return result;
+            this.networkTransactionData = networkTransactionData;
         }
 
         public override Task<IEnumerable<MirrorConfig>> GetAllMissingAsync(IEnumerable<string> keys)
@@ -73,7 +67,7 @@ namespace ei8.Cortex.Coding.Persistence
         }
 
         public Task<IDictionary<string, Neuron>> GetByKeysAsync(IEnumerable<string> keys, bool throwErrorIfMissing) {
-            var foundMirrors = this.initializedMirrors.Where(
+            var foundMirrors = this.networkTransactionData.SavedTransientNeurons.Where(
                 im => this.mirrorConfigs.Any(
                     mc => mc.Url == im.MirrorUrl && keys.Contains(mc.Key)
                 )

@@ -76,6 +76,6 @@ namespace ei8.Cortex.Coding.Persistence
         }
 
         public IEnumerable<Neuron> SavedTransientNeurons => 
-            this.savedTransients.Values.OfType<Neuron>();
+            this.savedTransients.Values.OfType<Neuron>().ToList();
     }
 }

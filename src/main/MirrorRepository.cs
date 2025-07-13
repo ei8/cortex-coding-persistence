@@ -11,7 +11,19 @@ namespace ei8.Cortex.Coding.Persistence
 {
     public class MirrorRepository : MirrorRepositoryBase, IMirrorRepository
     {
-        private struct GetResult
+        // TODO:1 transfer to ei8.Cortex.Coding and use as return value of all Get methods
+        //public class GetResult<T>
+        //{
+        //    public GetResult(Guid userNeuronId, T value)
+        //    {
+        //        this.UserNeuronId = userNeuronId;
+        //        this.Value = value;
+        //    }
+        //    public Guid UserNeuronId { get; private set; }
+        //    public T Value { get; private set; }
+        //}
+
+        private struct GetResultCore
         {
             public QueryResult QueryResult;
             public IEnumerable<MirrorConfig> Config;
@@ -41,9 +53,9 @@ namespace ei8.Cortex.Coding.Persistence
         public override async Task<IEnumerable<MirrorConfig>> GetAllMissingAsync(IEnumerable<string> keys) => 
             (await this.GetByKeysCore(keys, false)).Missing;
 
-        private async Task<GetResult> GetByKeysCore(IEnumerable<string> keys, bool throwErrorIfMissing)
+        private async Task<GetResultCore> GetByKeysCore(IEnumerable<string> keys, bool throwErrorIfMissing)
         {
-            var result = new GetResult();
+            var result = new GetResultCore();
 
             AssertionConcern.AssertArgumentNotNull(keys, nameof(keys));
             AssertionConcern.AssertArgumentValid(
