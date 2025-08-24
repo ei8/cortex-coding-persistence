@@ -1,4 +1,5 @@
 ﻿using ei8.EventSourcing.Client;
+using Nancy.Extensions;
 using neurUL.Common.Domain.Model;
 using System;
 using System.Collections.Generic;
@@ -41,7 +42,7 @@ namespace ei8.Cortex.Coding.Persistence
                         mmc.Url,
                         null
                     )
-                );
+                ).DistinctBy(nm => nm.MirrorUrl);
 
                 await this.Save(newMirrors);
 

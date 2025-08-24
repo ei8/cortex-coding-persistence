@@ -15,7 +15,7 @@ namespace ei8.Cortex.Coding.Persistence
         private readonly ITerminalAdapter terminalAdapter;
         private readonly Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter;
         private readonly Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter;
-        private readonly Data.ExternalReference.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter;
+        private readonly Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter;
         private readonly INetworkTransactionData transactionData;
 
         public NetworkTransactionService(
@@ -23,7 +23,7 @@ namespace ei8.Cortex.Coding.Persistence
             neurUL.Cortex.Port.Adapter.In.InProcess.ITerminalAdapter terminalAdapter,
             ei8.Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter,
             ei8.Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter,
-            ei8.Data.ExternalReference.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter,
+            ei8.Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter,
             INetworkTransactionData transactionData
         )
         {
@@ -72,7 +72,7 @@ namespace ei8.Cortex.Coding.Persistence
            neurUL.Cortex.Port.Adapter.In.InProcess.ITerminalAdapter terminalAdapter,
            ei8.Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter,
            ei8.Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter,
-           ei8.Data.ExternalReference.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter
+           ei8.Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter
            )
         {
             // This unusedAuthorId is unused because the Transaction object uses two eventstores.
@@ -141,7 +141,7 @@ namespace ei8.Cortex.Coding.Persistence
                 {
                     expectedVersion = await transaction.InvokeAdapterAsync(
                         neuron.Id,
-                        typeof(ei8.Data.ExternalReference.Domain.Model.UrlChanged).Assembly.GetEventTypes(),
+                        typeof(ei8.Data.Mirror.Domain.Model.UrlChanged).Assembly.GetEventTypes(),
                         async (ev) => await externalReferenceItemAdapter.ChangeUrl(
                             neuron.Id,
                             neuron.MirrorUrl,

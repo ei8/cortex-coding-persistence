@@ -83,7 +83,7 @@ namespace ei8.Cortex.Coding.Persistence
             result.QueryResult = await this.networkRepository.GetByQueryAsync(
                 new NeuronQuery()
                 {
-                    ExternalReferenceUrl = result.Config.Select(er => er.Url),
+                    ExternalReferenceUrl = result.Config.Select(er => er.Url).Distinct(),
                     SortBy = SortByValue.NeuronCreationTimestamp,
                     SortOrder = SortOrderValue.Descending,
                     PageSize = result.Config.Count()
