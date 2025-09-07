@@ -36,30 +36,33 @@ namespace ei8.Cortex.Coding.Persistence
                 replacement.Id :
                 originalId;
 
-        public bool TryGetSavedTransient(string tag, IEnumerable<Guid> currentPostsynapticIds, out Network result)
+        public bool TryGetIdenticalNeuron(string tag, IEnumerable<Guid> postsynapticIds, out Network result)
         {
             bool bResult = false;
             result = null;
 
+            var resultTerminals = Enumerable.Empty<Terminal>();
+            // get neurons with... 
             var resultNeurons = this.savedTransients.Values.OfType<Neuron>().Where(
-                stn => stn.Tag == tag
+                stn => {
+                    var stnTerminals = this.savedTransients.Values.OfType<Terminal>().Where(t => t.PresynapticNeuronId  == stn.Id);
+
+                    // ... same tag and postsynaptic Ids
+                    var whereResult = stn.Tag == tag && stnTerminals.Select(stt => stt.PostsynapticNeuronId).HasSameElementsAs(postsynapticIds);
+
+                    if (whereResult)
+                        resultTerminals = stnTerminals;
+
+                    return whereResult;
+                }
             );
 
-            var resultTerminals = this.savedTransients.Values.OfType<Terminal>().Where(
-                stt => 
-                    resultNeurons.Select(rn => rn.Id).Contains(stt.PresynapticNeuronId) && 
-                    currentPostsynapticIds.Contains(stt.PostsynapticNeuronId)
-            );
-
-            if (
-                resultTerminals.Count() == currentPostsynapticIds.Count() &&
-                resultTerminals.Select(rt => rt.PostsynapticNeuronId).HasSameElementsAs(currentPostsynapticIds)
-            )
+            if (resultNeurons.Any())
             { 
                 var distinctPresynapticIds = resultTerminals.Select(rt => rt.PresynapticNeuronId).Distinct();
                 AssertionConcern.AssertStateTrue(
                     distinctPresynapticIds.Count() <= 1,
-                    $"Redundant Neurons with postsynaptic Neurons '{string.Join(", ", currentPostsynapticIds)}' encountered: {string.Join(", ", distinctPresynapticIds)}"
+                    $"Redundant Neurons with postsynaptic Neurons '{string.Join(", ", postsynapticIds)}' encountered: {string.Join(", ", distinctPresynapticIds)}"
                 );
 
                 var tempResult = new Network();

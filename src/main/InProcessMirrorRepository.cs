@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
-    public class InitializingMirrorRepository : MirrorRepositoryBase, IMirrorRepository
+    public class InProcessMirrorRepository : MirrorRepositoryBase, IMirrorRepository
     {
         private readonly IEnumerable<MirrorConfig> mirrorConfigs;
         private readonly INetworkTransactionData networkTransactionData;
 
-        public InitializingMirrorRepository(
+        public InProcessMirrorRepository(
             ITransaction transaction,
             INetworkTransactionService networkTransactionService,
             INetworkTransactionData networkTransactionData,

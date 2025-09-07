@@ -9,28 +9,32 @@ namespace ei8.Cortex.Coding.Persistence
 {
     public static class NetworkExtensions
     {
+        public static void AddReplaceItems(this Network network, IEnumerable<INetworkItem> items) =>
+            items.ToList().ForEach(ni => network.AddReplace(ni));
+
         public static async Task UniquifyAsync(
             this Network network,
-            INetworkRepository networkRepository = null,
             INetworkTransactionData transactionData = null,
+            Func<string, IEnumerable<Guid>, Task<Network>> persistentIdenticalNeuronRetriever = null,
+            Func<Guid, Guid, Task<Network>> persistentIdenticalNeuronTerminalRetriever = null,
             IDictionary<string, Network> cache = null
         )
         {
             await NetworkExtensions.UniquifyNeuronsAsync(
                 network,
-                networkRepository,
+                persistentIdenticalNeuronRetriever,
                 transactionData,
                 cache
             );
             await NetworkExtensions.UniquifyTerminalsAsync(
                 network,
-                networkRepository
+                persistentIdenticalNeuronTerminalRetriever
             );
         }
 
         private static async Task UniquifyNeuronsAsync(
             Network network,
-            INetworkRepository networkRepository = null,
+            Func<string, IEnumerable<Guid>, Task<Network>> persistentIdenticalNeuronRetriever = null,
             INetworkTransactionData transactionData = null,
             IDictionary<string, Network> cache = null
         )
@@ -85,11 +89,11 @@ namespace ei8.Cortex.Coding.Persistence
                     {
                         NetworkExtensions.Log($"> Neuron marked as transient. Retrieving persistent identical granny with postsynaptics " +
                             $"'{string.Join(", ", postsynaptics.Select(n => n.Id))}'.");
-                        var identical = await NetworkExtensions.GetPersistentIdentical(
+                        var identical = await NetworkExtensions.GetIdenticalNeuronAsync(
                             postsynaptics.Select(n => n.Id),
                             currentNeuron.Tag,
                             transactionData,
-                            networkRepository,
+                            persistentIdenticalNeuronRetriever,
                             cache
                         );
 
@@ -172,7 +176,7 @@ namespace ei8.Cortex.Coding.Persistence
 
         private static async Task UniquifyTerminalsAsync(
             Network network,
-            INetworkRepository networkRepository = null
+            Func<Guid, Guid, Task<Network>> persistentIdenticalNeuronTerminalRetriever = null
         )
         {
             var terminalIds = network.GetItems<Terminal>()
@@ -183,8 +187,8 @@ namespace ei8.Cortex.Coding.Persistence
             {
                 if(
                     network.TryGetById(tId, out Terminal currentTerminal) &&
-                    await NetworkExtensions.HasPersistentIdentical(
-                        networkRepository,
+                    await NetworkExtensions.HasPersistentIdenticalAsync(
+                        persistentIdenticalNeuronTerminalRetriever,
                         currentTerminal.PresynapticNeuronId,
                         currentTerminal.PostsynapticNeuronId
                     )
@@ -193,29 +197,18 @@ namespace ei8.Cortex.Coding.Persistence
             }
         }
 
-        private static async Task<bool> HasPersistentIdentical(
-            INetworkRepository networkRepository, 
+        private static async Task<bool> HasPersistentIdenticalAsync(
+            Func<Guid, Guid, Task<Network>> persistentIdenticalNeuronTerminalRetriever, 
             Guid presynapticNeuronId, 
             Guid postsynapticNeuronId
         )
         {
             var result = false;
 
-            if (networkRepository != null)
+            if (persistentIdenticalNeuronTerminalRetriever != null)
             {
-                var queryResult = await networkRepository.GetByQueryAsync(
-                        new Library.Common.NeuronQuery()
-                        {
-                            Id = new[] { presynapticNeuronId.ToString() },
-                            Postsynaptic = new[] { postsynapticNeuronId.ToString() },
-                            // TODO: how should this be handled
-                            NeuronActiveValues = Library.Common.ActiveValues.All,
-                            TerminalActiveValues = Library.Common.ActiveValues.All
-                        },
-                        false
-                    );
-
-                result = queryResult.Network.GetItems<Neuron>().Any();
+                var terminalNetwork = await persistentIdenticalNeuronTerminalRetriever(presynapticNeuronId, postsynapticNeuronId);
+                result = terminalNetwork.GetItems<Neuron>().Any();
             }
 
             return result;
@@ -273,22 +266,22 @@ namespace ei8.Cortex.Coding.Persistence
             IEnumerable<Guid> processedNeuronIds
         ) => posts.Where(n => n.IsTransient && !processedNeuronIds.Contains(n.Id));
 
-        private static async Task<Neuron> GetPersistentIdentical(
+        private static async Task<Neuron> GetIdenticalNeuronAsync(
             IEnumerable<Guid> currentPostsynapticIds,
             string currentTag,
             INetworkTransactionData transactionData,
-            INetworkRepository networkRepository = null,
+            Func<string, IEnumerable<Guid>, Task<Network>> persistentIdenticalNeuronRetriever = null,
             IDictionary<string, Network> cache = null
         )
         {
             Neuron result = null;
 
-            var similarGrannyFromCacheOrDb = await NetworkExtensions.GetNetwork(
+            var similarGrannyFromCacheOrDb = await NetworkExtensions.ObtainIdenticalNeuronAsync(
                 cache,
                 transactionData,
                 currentTag,
                 currentPostsynapticIds,
-                networkRepository
+                persistentIdenticalNeuronRetriever
             );
 
             if (similarGrannyFromCacheOrDb != null)
@@ -316,12 +309,21 @@ namespace ei8.Cortex.Coding.Persistence
             return result;
         }
 
-        private static async Task<Network> GetNetwork(
+        /// <summary>
+        /// Gets identical neuron from Cache, NetworkTransactionData, or Persistence.
+        /// </summary>t
+        /// <param name="cache"></param>
+        /// <param name="networkTransactionData"></param>
+        /// <param name="currentTag"></param>
+        /// <param name="currentPostsynapticIds"></param>
+        /// <param name="persistentIdenticalNeuronRetriever"></param>
+        /// <returns></returns>
+        private static async Task<Network> ObtainIdenticalNeuronAsync(
             IDictionary<string, Network> cache,
             INetworkTransactionData networkTransactionData,
             string currentTag,
             IEnumerable<Guid> currentPostsynapticIds,
-            INetworkRepository networkRepository = null
+            Func<string, IEnumerable<Guid>, Task<Network>> persistentIdenticalNeuronRetriever
         )
         {
             string cacheId = currentTag + string.Join(string.Empty, currentPostsynapticIds.OrderBy(g => g));
@@ -330,23 +332,15 @@ namespace ei8.Cortex.Coding.Persistence
                     cache == null || 
                     !cache.TryGetValue(cacheId, out Network result)
                 ) &&
-                !networkTransactionData.TryGetSavedTransient(currentTag, currentPostsynapticIds, out result) &&
-                networkRepository != null
+                !networkTransactionData.TryGetIdenticalNeuron(currentTag, currentPostsynapticIds, out result) &&
+                persistentIdenticalNeuronRetriever != null
             )
             {
-                var tempResult = await networkRepository.GetByQueryAsync(
-                    new Library.Common.NeuronQuery()
-                    {
-                        Tag = !string.IsNullOrEmpty(currentTag) ? new[] { currentTag } : null,
-                        Postsynaptic = currentPostsynapticIds.Select(pi => pi.ToString()),
-                        DirectionValues = Library.Common.DirectionValues.Outbound,
-                        Depth = 1
-                    }
-                );
+                var network = await persistentIdenticalNeuronRetriever(currentTag, currentPostsynapticIds);
 
-                if (tempResult.Network.GetItems().Any())
+                if (network.GetItems().Any())
                 {
-                    result = tempResult.Network;
+                    result = network;
 
                     if (cache != null)
                         cache.Add(cacheId, result);

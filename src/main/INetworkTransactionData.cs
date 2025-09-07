@@ -17,6 +17,13 @@ namespace ei8.Cortex.Coding.Persistence
 
         bool IsReplaced(Guid value);
 
-        bool TryGetSavedTransient(string tag, IEnumerable<Guid> currentPostsynapticIds, out Network result);
+        /// <summary>
+        /// Tries to obtain a Network from the Transaction Data containing a Neuron with the specified tag and postsynapticIds.
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <param name="postsynapticIds"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        bool TryGetIdenticalNeuron(string tag, IEnumerable<Guid> postsynapticIds, out Network result);
     }
 }
