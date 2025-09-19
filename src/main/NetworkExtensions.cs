@@ -9,15 +9,30 @@ namespace ei8.Cortex.Coding.Persistence
 {
     public static class NetworkExtensions
     {
+        /// <summary>
+        /// Adds or replaces items in the Network with the specified items.
+        /// </summary>
+        /// <param name="network"></param>
+        /// <param name="items"></param>
         public static void AddReplaceItems(this Network network, IEnumerable<INetworkItem> items) =>
             items.ToList().ForEach(ni => network.AddReplace(ni));
 
+        /// <summary>
+        /// Uniquifies the items in the Network using the specified transaction data, 
+        /// identical retrievers, and cache.
+        /// </summary>
+        /// <param name="network"></param>
+        /// <param name="transactionData"></param>
+        /// <param name="persistentIdenticalNeuronRetriever"></param>
+        /// <param name="persistentIdenticalNeuronTerminalRetriever"></param>
+        /// <param name="cache"></param>
+        /// <returns></returns>
         public static async Task UniquifyAsync(
             this Network network,
             INetworkTransactionData transactionData = null,
             Func<string, IEnumerable<Guid>, Task<Network>> persistentIdenticalNeuronRetriever = null,
             Func<Guid, Guid, Task<Network>> persistentIdenticalNeuronTerminalRetriever = null,
-            IDictionary<string, Network> cache = null
+            INetworkDictionary<string> cache = null
         )
         {
             await NetworkExtensions.UniquifyNeuronsAsync(
@@ -36,7 +51,7 @@ namespace ei8.Cortex.Coding.Persistence
             Network network,
             Func<string, IEnumerable<Guid>, Task<Network>> persistentIdenticalNeuronRetriever = null,
             INetworkTransactionData transactionData = null,
-            IDictionary<string, Network> cache = null
+            INetworkDictionary<string> cache = null
         )
         {
             var currentNeuronIds = network.GetItems<Neuron>()
@@ -129,6 +144,14 @@ namespace ei8.Cortex.Coding.Persistence
             }
         }
 
+        /// <summary>
+        /// Replaces item in Network that matches the specified currentNeuronId,
+        /// with the specified identical item.
+        /// </summary>
+        /// <param name="network"></param>
+        /// <param name="transactionData"></param>
+        /// <param name="currentNeuronId"></param>
+        /// <param name="identical"></param>
         public static void ReplaceWithIdentical(
             Network network, 
             INetworkTransactionData transactionData, 
@@ -271,7 +294,7 @@ namespace ei8.Cortex.Coding.Persistence
             string currentTag,
             INetworkTransactionData transactionData,
             Func<string, IEnumerable<Guid>, Task<Network>> persistentIdenticalNeuronRetriever = null,
-            IDictionary<string, Network> cache = null
+            INetworkDictionary<string> cache = null
         )
         {
             Neuron result = null;
@@ -319,7 +342,7 @@ namespace ei8.Cortex.Coding.Persistence
         /// <param name="persistentIdenticalNeuronRetriever"></param>
         /// <returns></returns>
         private static async Task<Network> ObtainIdenticalNeuronAsync(
-            IDictionary<string, Network> cache,
+            INetworkDictionary<string> cache,
             INetworkTransactionData networkTransactionData,
             string currentTag,
             IEnumerable<Guid> currentPostsynapticIds,
@@ -330,7 +353,7 @@ namespace ei8.Cortex.Coding.Persistence
             if (
                 (
                     cache == null || 
-                    !cache.TryGetValue(cacheId, out Network result)
+                    !cache.TryGetById(cacheId, out Network result)
                 ) &&
                 !networkTransactionData.TryGetIdenticalNeuron(currentTag, currentPostsynapticIds, out result) &&
                 persistentIdenticalNeuronRetriever != null

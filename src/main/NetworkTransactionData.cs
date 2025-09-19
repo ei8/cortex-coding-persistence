@@ -47,7 +47,7 @@ namespace ei8.Cortex.Coding.Persistence
                 stn => {
                     var stnTerminals = this.savedTransients.Values.OfType<Terminal>().Where(t => t.PresynapticNeuronId  == stn.Id);
 
-                    // ... same tag and postsynaptic Ids
+                    // ... same tag and postsynaptic IDs
                     var whereResult = stn.Tag == tag && stnTerminals.Select(stt => stt.PostsynapticNeuronId).HasSameElementsAs(postsynapticIds);
 
                     if (whereResult)

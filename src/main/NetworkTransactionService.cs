@@ -15,24 +15,27 @@ namespace ei8.Cortex.Coding.Persistence
         private readonly ITerminalAdapter terminalAdapter;
         private readonly Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter;
         private readonly Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter;
-        private readonly Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter;
+        private readonly Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter mirrorItemAdapter;
         private readonly INetworkTransactionData transactionData;
+        private readonly INetworkDictionary<CacheKey> readWriteCache;
 
         public NetworkTransactionService(
             neurUL.Cortex.Port.Adapter.In.InProcess.INeuronAdapter neuronAdapter,
             neurUL.Cortex.Port.Adapter.In.InProcess.ITerminalAdapter terminalAdapter,
             ei8.Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter,
             ei8.Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter,
-            ei8.Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter,
-            INetworkTransactionData transactionData
+            ei8.Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter mirrorItemAdapter,
+            INetworkTransactionData transactionData,
+            INetworkDictionary<CacheKey> readWriteCache
         )
         {
             this.neuronAdapter = neuronAdapter;
             this.terminalAdapter = terminalAdapter;
             this.tagItemAdapter = tagItemAdapter;
             this.aggregateItemAdapter = aggregateItemAdapter;
-            this.externalReferenceItemAdapter = externalReferenceItemAdapter;
+            this.mirrorItemAdapter = mirrorItemAdapter;
             this.transactionData = transactionData;
+            this.readWriteCache = readWriteCache;
         }
 
         public async Task SaveAsync(
@@ -51,7 +54,8 @@ namespace ei8.Cortex.Coding.Persistence
                     this.terminalAdapter,
                     this.tagItemAdapter,
                     this.aggregateItemAdapter,
-                    this.externalReferenceItemAdapter
+                    this.mirrorItemAdapter,
+                    this.readWriteCache[CacheKey.Write]
                 );
                 
                 this.transactionData.AddSavedTransient(ei);
@@ -72,8 +76,9 @@ namespace ei8.Cortex.Coding.Persistence
            neurUL.Cortex.Port.Adapter.In.InProcess.ITerminalAdapter terminalAdapter,
            ei8.Data.Tag.Port.Adapter.In.InProcess.IItemAdapter tagItemAdapter,
            ei8.Data.Aggregate.Port.Adapter.In.InProcess.IItemAdapter aggregateItemAdapter,
-           ei8.Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter externalReferenceItemAdapter
-           )
+           ei8.Data.Mirror.Port.Adapter.In.InProcess.IItemAdapter mirrorItemAdapter,
+           Network writeCache
+        )
         {
             // This unusedAuthorId is unused because the Transaction object uses two eventstores.
             // The adapter methods use temporary eventstores whose authorIds,
@@ -121,7 +126,19 @@ namespace ei8.Cortex.Coding.Persistence
                         );
                 }
 
-                if (neuron.RegionId.HasValue)
+                bool hasCacheNeuronValue = false;
+                if (
+                    (
+                        hasCacheNeuronValue = NetworkTransactionService.TryGetCacheNeuronHasValue(
+                            writeCache, 
+                            neuron.Id, 
+                            n => n.RegionId.HasValue, 
+                            n => n.RegionId.Value,
+                            out Guid regionId
+                        ) 
+                    ) ||
+                    neuron.RegionId.HasValue
+                )
                 {
                     // assign region value to id
                     expectedVersion = await transaction.InvokeAdapterAsync(
@@ -129,7 +146,9 @@ namespace ei8.Cortex.Coding.Persistence
                         typeof(ei8.Data.Aggregate.Domain.Model.AggregateChanged).Assembly.GetEventTypes(),
                         async (ev) => await aggregateItemAdapter.ChangeAggregate(
                             neuron.Id,
-                            neuron.RegionId.ToString(),
+                            hasCacheNeuronValue ?
+                                regionId.ToString() : 
+                                neuron.RegionId.ToString(),
                             unusedAuthorId,
                             ev
                         ),
@@ -137,14 +156,27 @@ namespace ei8.Cortex.Coding.Persistence
                     );
                 }
 
-                if (!string.IsNullOrWhiteSpace(neuron.MirrorUrl))
+                if (
+                    (
+                        hasCacheNeuronValue = NetworkTransactionService.TryGetCacheNeuronHasValue(
+                            writeCache, 
+                            neuron.Id, 
+                            n => !string.IsNullOrWhiteSpace(n.MirrorUrl), 
+                            n => n.MirrorUrl,
+                            out string mirrorUrl
+                        )
+                    ) || 
+                    !string.IsNullOrWhiteSpace(neuron.MirrorUrl)
+                )
                 {
                     expectedVersion = await transaction.InvokeAdapterAsync(
                         neuron.Id,
                         typeof(ei8.Data.Mirror.Domain.Model.UrlChanged).Assembly.GetEventTypes(),
-                        async (ev) => await externalReferenceItemAdapter.ChangeUrl(
+                        async (ev) => await mirrorItemAdapter.ChangeUrl(
                             neuron.Id,
-                            neuron.MirrorUrl,
+                            hasCacheNeuronValue ?
+                                mirrorUrl :
+                                neuron.MirrorUrl,
                             unusedAuthorId,
                             ev
                         ),
@@ -153,6 +185,24 @@ namespace ei8.Cortex.Coding.Persistence
                 }
                 #endregion
             }
+        }
+
+        private static bool TryGetCacheNeuronHasValue<T>(
+            Network network,
+            Guid id,
+            Predicate<Neuron> hasValueChecker,
+            Func<Neuron, T> valueRetriever,
+            out T result
+        )
+        {
+            bool bResult = network.TryGetById(id, out Neuron neuron) && hasValueChecker(neuron);
+
+            if (bResult)
+                result = valueRetriever(neuron);
+            else
+                result = default;
+
+            return bResult;
         }
     }
 }
