@@ -5,13 +5,13 @@
 	<AssemblyName>ei8.Cortex.Coding.Persistence</AssemblyName>
     <RootNamespace>ei8.Cortex.Coding.Persistence</RootNamespace>
     <PackageId>ei8.Cortex.Coding.Persistence</PackageId>
-    <PackageVersion>0.3.1</PackageVersion>
+    <PackageVersion>0.3.2</PackageVersion>
     <Authors>Elmer Roderick Niem Bool</Authors>
     <Description>Cortex Coding Persistence</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>Initial commit.</PackageReleaseNotes>
     <PackageTags>cortex coding persistence</PackageTags>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <PackageLicenseUrl>https://www.gnu.org/licenses/agpl-3.0.en.html</PackageLicenseUrl>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ei8.Cortex.Coding" Version="0.1.9" />
+    <PackageReference Include="ei8.Cortex.Coding" Version="0.2.0" />
     <PackageReference Include="ei8.Cortex.IdentityAccess.Client" Version="0.2.3" />
     <PackageReference Include="ei8.Cortex.Library.Client" Version="0.4.0" />
     <PackageReference Include="ei8.Data.Aggregate.Port.Adapter.In.InProcess" Version="0.1.5" />
