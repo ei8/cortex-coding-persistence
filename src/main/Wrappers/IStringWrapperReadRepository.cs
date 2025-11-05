@@ -1,8 +1,8 @@
-﻿using System.Threading.Tasks;
-using System.Threading;
-using System.Collections.Generic;
+﻿using ei8.Cortex.Coding.Model.Wrappers;
 using System;
-using ei8.Cortex.Coding.Wrappers;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence.Wrappers
 {

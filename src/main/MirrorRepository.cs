@@ -71,12 +71,12 @@ namespace ei8.Cortex.Coding.Persistence
                 nameof(keys)
             );
 
-            result.Config = mirrorConfigs.Where(er => keys.Contains(er.Key));
+            result.Config = mirrorConfigs.Where(mc => mc.Keys.Any(mck => keys.Contains(mck)));
             MirrorRepository.ValidateRequiredItems(
                 "At least one Mirror configuration was not found",
                 keys,
                 result.Config,
-                (k, i) => i.Key == k,
+                (k, i) => i.Keys.Contains(k),
                 k => k
             );
 
@@ -96,22 +96,62 @@ namespace ei8.Cortex.Coding.Persistence
                 result.Config,
                 result.QueryResult.Network.GetItems<Neuron>(),
                 (k, i) => i.MirrorUrl == k.Url,
-                k => k.Key,
+                k => string.Join(",", k.Keys),
                 throwErrorIfMissing
             );
 
             return result;
         }
 
-        public async Task<IDictionary<string, Neuron>> GetByKeysAsync(IEnumerable<string> keys, bool throwErrorIfMissing = true)
+        public async Task<IDictionary<string, Neuron>> GetByKeysAsync(
+            IEnumerable<string> keys, 
+            bool throwErrorIfMissing = true
+        )
         {
             var getResult = await this.GetByKeysCore(keys, throwErrorIfMissing);
 
-            return getResult.QueryResult.Network
-                .GetItems<Neuron>()
-                .ToDictionary(
-                    n => getResult.Config.Single(mc => mc.Url == n.MirrorUrl).Key
+            return MirrorRepository.GetKeyMirrorDictionary(
+                keys,
+                getResult.QueryResult.Network.GetItems<Neuron>(),
+                this.mirrorConfigs
+            );
+        }
+
+        internal static IDictionary<string, Neuron> GetKeyMirrorDictionary(
+            IEnumerable<string> keys,
+            IEnumerable<Neuron> foundMirrors,
+            IEnumerable<MirrorConfig> mirrorConfigs
+        )
+        {
+            // return specified keys
+            var kvps = keys.Where(
+                    // ... that are 
+                    kp => mirrorConfigs.Any(
+                        // ... contained in the mirror configuration
+                        mc => mc.Keys.Contains(kp) &&
+                            // and whose configured url matches the url in any found Mirrors
+                            foundMirrors.Any(fm => fm.MirrorUrl == mc.Url)
+                    )
+                )
+                // convert the matching keys
+                .Select(
+                    // ... into key value pairs
+                    kp => new KeyValuePair<string, Neuron>(
+                        // ... using the key as the key
+                        kp,
+                        // ... and the foundMirror as the value
+                        foundMirrors.Single(
+                            // ...where the found mirror
+                            fm => mirrorConfigs.Single(
+                                // ...matches a mirror configuration
+                                mc => mc.Keys.Contains(kp)
+                                // ... whose url matches the url of the found mirror
+                            ).Url == fm.MirrorUrl
+                        )
+                    )
                 );
+            // convert the key value pairs into a dictionary
+            return kvps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
 
         internal static IEnumerable<TKey> ValidateRequiredItems<TKey, TItem>(

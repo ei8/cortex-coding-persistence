@@ -1,4 +1,4 @@
-﻿using ei8.Cortex.Coding.Versioning;
+﻿using ei8.Cortex.Coding.Model.Versioning;
 using System;
 using System.Collections.Generic;
 using System.Threading;
