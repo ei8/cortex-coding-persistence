@@ -1,4 +1,5 @@
-﻿using ei8.EventSourcing.Client;
+﻿using ei8.Cortex.Coding.Mirrors;
+using ei8.EventSourcing.Client;
 using Microsoft.Extensions.Options;
 using neurUL.Common.Domain.Model;
 using System;
@@ -8,11 +9,21 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
+    /// <summary>
+    /// Represents an InProcessMirrorRepository.
+    /// </summary>
     public class InProcessMirrorRepository : MirrorRepositoryBase, IMirrorRepository
     {
         private readonly IEnumerable<MirrorConfig> mirrorConfigs;
         private readonly INetworkTransactionData networkTransactionData;
 
+        /// <summary>
+        /// Constructs an InProcessMirrorRepository.
+        /// </summary>
+        /// <param name="transaction"></param>
+        /// <param name="networkTransactionService"></param>
+        /// <param name="networkTransactionData"></param>
+        /// <param name="mirrorConfigs"></param>
         public InProcessMirrorRepository(
             ITransaction transaction,
             INetworkTransactionService networkTransactionService,
@@ -29,6 +40,11 @@ namespace ei8.Cortex.Coding.Persistence
             this.networkTransactionData = networkTransactionData;
         }
 
+        /// <summary>
+        /// Gets the MirrorConfigs matching the specified keys that are not found in Persistence.
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <returns></returns>
         public override Task<IEnumerable<MirrorConfig>> GetAllMissingAsync(IEnumerable<string> keys)
         {
             AssertionConcern.AssertArgumentNotNull(keys, nameof(keys));
@@ -68,6 +84,12 @@ namespace ei8.Cortex.Coding.Persistence
             return Task.FromResult(missing);
         }
 
+        /// <summary>
+        /// Gets Mirror neurons by their Keys.
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <param name="throwErrorIfMissing"></param>
+        /// <returns></returns>
         public Task<IDictionary<string, Neuron>> GetByKeysAsync(
             IEnumerable<string> keys, 
             bool throwErrorIfMissing

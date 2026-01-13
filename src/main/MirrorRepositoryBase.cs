@@ -1,4 +1,5 @@
-﻿using ei8.EventSourcing.Client;
+﻿using ei8.Cortex.Coding.Mirrors;
+using ei8.EventSourcing.Client;
 using Nancy.Extensions;
 using neurUL.Common.Domain.Model;
 using System;
@@ -8,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
+    /// <summary>
+    /// Represents the base class for MirrorRepository classes.
+    /// </summary>
     public abstract class MirrorRepositoryBase
     {
         private readonly ITransaction transaction;
@@ -25,6 +29,11 @@ namespace ei8.Cortex.Coding.Persistence
             this.transaction = transaction;
         }
 
+        /// <summary>
+        /// Initializes Mirrors using the specified keys.
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <returns></returns>
         public async Task<bool> Initialize(IEnumerable<string> keys)
         {
             var result = false;
@@ -53,6 +62,11 @@ namespace ei8.Cortex.Coding.Persistence
         }
 
         // TODO: specify region to save values
+        /// <summary>
+        /// Saves the specified Mirror neurons.
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
         public virtual async Task Save(IEnumerable<Neuron> values)
         {
             var network = new Network();

@@ -1,4 +1,5 @@
-﻿using ei8.Cortex.Library.Common;
+﻿using ei8.Cortex.Coding.Mirrors;
+using ei8.Cortex.Library.Common;
 using ei8.EventSourcing.Client;
 using Microsoft.Extensions.Options;
 using neurUL.Common.Domain.Model;
@@ -9,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace ei8.Cortex.Coding.Persistence
 {
+    /// <summary>
+    /// Represents a MirrorRepository.
+    /// </summary>
     public class MirrorRepository : MirrorRepositoryBase, IMirrorRepository
     {
         // TODO:1 transfer to ei8.Cortex.Coding and use as return value of all Get methods
@@ -33,6 +37,13 @@ namespace ei8.Cortex.Coding.Persistence
         private readonly INetworkRepository networkRepository;
         private readonly IEnumerable<MirrorConfig> mirrorConfigs;
 
+        /// <summary>
+        /// Constructs a MIrrorRepository.
+        /// </summary>
+        /// <param name="networkRepository"></param>
+        /// <param name="transaction"></param>
+        /// <param name="networkTransactionService"></param>
+        /// <param name="mirrorConfigs"></param>
         public MirrorRepository(
             INetworkRepository networkRepository,
             ITransaction transaction,
@@ -50,6 +61,11 @@ namespace ei8.Cortex.Coding.Persistence
             this.mirrorConfigs = mirrorConfigs.Value.ToArray();
         }
 
+        /// <summary>
+        /// Gets the MirrorConfigs matching the specified keys that are not found in Persistence.
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <returns></returns>
         public override async Task<IEnumerable<MirrorConfig>> GetAllMissingAsync(IEnumerable<string> keys) => 
             (await this.GetByKeysCore(keys, false)).Missing;
 
@@ -103,6 +119,12 @@ namespace ei8.Cortex.Coding.Persistence
             return result;
         }
 
+        /// <summary>
+        /// Gets Mirror neurons by their Keys.
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <param name="throwErrorIfMissing"></param>
+        /// <returns></returns>
         public async Task<IDictionary<string, Neuron>> GetByKeysAsync(
             IEnumerable<string> keys, 
             bool throwErrorIfMissing = true
